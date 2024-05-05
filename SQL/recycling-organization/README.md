@@ -1,0 +1,1 @@
+In the Recycling Organization project we basically have two companies and we work with their data.
