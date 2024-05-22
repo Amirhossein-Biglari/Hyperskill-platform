@@ -19,3 +19,26 @@ By participating in this project, you will:
 - Develop a nuanced understanding of how financial data can inform business strategy and operational efficiency.
 - Enhance your analytical skills, preparing you for more advanced roles in data analysis and business intelligence.
 
+### Table Details
+
+#### Income_one_day (Company 1)
+- **pick_up_point:** An identifier for each collection point.
+- **date:** The date of the transaction without time details.
+- **money_in:** The amount of money received at the collection point for the specified date.
+
+#### Outcome_one_day (Company 1)
+- **pick_up_point:** Identifies each collection point.
+- **date:** Records the date of the transaction without time components.
+- **money_out:** Represents the amount of money issued to recyclable material distributors for the given date.
+
+#### Income (Company 2)
+- **code:** Primary key that tracks income transactions.
+- **pick_up_point:** Identifies each collection point.
+- **date:** Records transaction dates without time details.
+- **money_in:** Reflects the amount of money received at the collection point for the specified date.
+
+#### Outcome (Company 2)
+- **code:** Primary key that tracks outcome transactions.
+- **pick_up_point:** Identifies each collection point.
+- **date:** Records transaction dates without time details.
+- **money_out:** Represents the amount of money issued to recyclable material distributors for the given date.
