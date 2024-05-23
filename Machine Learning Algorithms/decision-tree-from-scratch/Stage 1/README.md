@@ -22,12 +22,3 @@ The weighted Gini Impurity accounts for the proportion of objects in the vertice
 
 - **Gini Impurity for the node** `[1,1,1,0,0,0,0,0,1,1]`
 - **Weighted Gini Impurity for the split** `[1,1,1,0]` and `[0,0,0,0,1,1]`
-
-Note: All output numbers are rounded to the second decimal place, though internal calculations maintain higher precision.
-
-## Usage
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/gini-impurity-calculation.git
-   cd gini-impurity-calculation
