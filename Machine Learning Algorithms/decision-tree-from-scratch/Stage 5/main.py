@@ -1,146 +1,224 @@
 import pandas as pd
-import numpy as np
-
 
 class Node:
     def __init__(self):
-        # class initialization
-        self.left = None
-        self.right = None
-        self.term = False
-        self.label = None
-        self.feature = None
-        self.value = None
+        # Initialize the node with default values
+        self.left = None  # Left child node
+        self.right = None  # Right child node
+        self.term = False  # Terminal node flag
+        self.label = None  # Label for terminal node
+        self.feature = None  # Feature used for splitting
+        self.value = None  # Value of the feature used for splitting
 
     def set_split(self, feature, value):
-        # this function saves the node splitting feature and its value
+        # This function saves the node splitting feature and its value
         self.feature = feature
         self.value = value
 
     def set_term(self, label):
-        # if the node is a leaf, this function saves its label
+        # If the node is a leaf, this function saves its label
         self.term = True
         self.label = label
 
-
 class DecisionTree:
-    def __init__(self, _root, minimum=1):
-        self.root = _root
-        self.minimum = minimum
+    def __init__(self, node) -> None:
+        # Initialize the decision tree with a root node
+        self.root = node
+        self.minimum_num_samples = 1  # Minimum samples to split
 
-    def _calculate_gini_impurity(self, node: pd.Series):
-        labels_proportion = {}
-        for label in node.unique():
-            labels_proportion[label] = list(node.values).count(label) / len(node)
+    def _gini_impurity(self, labels: list):
+        """
+        Calculate the Gini impurity for a list of labels.
 
-        gini_score = 1
-        for proportion in labels_proportion.values():
-            gini_score -= (proportion ** 2)
-        return gini_score
+        Gini impurity measures the likelihood of an incorrect classification
+        of a new instance of a random variable. It reaches its minimum (zero) 
+        when all cases in a node fall into a single target category.
 
-    def _calculate_weighted_gini_impurity(self, left_child: pd.Series, right_child: pd.Series):
-        size = len(left_child) + len(right_child)
-        return len(left_child) / size * self._calculate_gini_impurity(left_child) + len(
-            right_child) / size * self._calculate_gini_impurity(right_child)
+        Args:
+            labels (list): A list of labels.
 
-    def _split_function(self, features: pd.DataFrame, targets: pd.Series):
-        least_gini_index = 1
-        feature_name = None
-        left_indices = None
-        right_indices = None
-        split_value = None
+        Returns:
+            float: The Gini impurity of the labels.
+        """
+        # Calculate the probability of each unique label
+        probabilities = [labels.count(label) / len(labels) for label in set(labels)]
+        # Calculate the Gini impurity
+        return 1 - sum([prob ** 2 for prob in probabilities])
 
-        for column in features.columns:
-            for column_value in features[column].unique():
-                left_node_indices = list(features.loc[features[column] == column_value].index)
-                right_node_indices = list(features.loc[features[column] != column_value].index)
+    def _weighted_gini_impurity(self, node1_labels: list, node2_labels: list):
+        """
+        Calculate the weighted Gini impurity for two sets of labels.
 
-                left_node_targets = targets[left_node_indices]
-                right_node_targets = targets[right_node_indices]
+        The weighted Gini impurity takes into account the size of each node
+        and combines their Gini impurities to give an overall measure.
 
-                gini_index = self._calculate_weighted_gini_impurity(left_node_targets, right_node_targets)
+        Args:
+            node1_labels (list): A list of labels for the first node.
+            node2_labels (list): A list of labels for the second node.
 
-                if gini_index < least_gini_index:
-                    least_gini_index = gini_index
-                    feature_name = column
-                    split_value = column_value
-                    left_indices = left_node_indices
-                    right_indices = right_node_indices
+        Returns:
+            float: The weighted Gini impurity of the two nodes.
+        """
+        # Total number of labels
+        n = len(node1_labels) + len(node2_labels)
+        # Calculate the weighted Gini impurity
+        return (len(node1_labels) / n * self._gini_impurity(node1_labels) +
+                len(node2_labels) / n * self._gini_impurity(node2_labels))
 
-        return feature_name, split_value, left_indices, right_indices, least_gini_index
+    def _split_function(self, dataset: pd.DataFrame, labels: pd.Series):
+        """
+        Find the best feature and value to split the dataset based on Gini impurity.
 
-    def _recursive_splitting(self, node, features: pd.DataFrame, targets: pd.Series):
-        gini_impurity = self._calculate_gini_impurity(targets)
+        This function iterates over all features and their unique values to find
+        the split that results in the lowest weighted Gini impurity.
 
-        different_rows = features.drop_duplicates()
+        Args:
+            dataset (pd.DataFrame): DataFrame containing the feature columns.
+            labels (pd.Series): Series containing the labels.
 
-        if len(targets) <= self.minimum or gini_impurity == 0 or len(different_rows) == 1:
-            index = np.argmax(np.unique(targets, return_counts=True)[1])
-            node.set_term(np.unique(targets)[index])
+        Returns:
+            tuple: Minimum weighted Gini impurity, best feature to split on, 
+                value of the best feature to split on, indices of left and right nodes.
+        """
+        minimum_weighted_gini = 0.51  # Initialize with a value higher than maximum Gini impurity
+        best_feature = None  # To store the best feature found
+        best_feature_value = None  # To store the best value of the feature found
+        best_left_node_index = None  # To store the indices of the left node
+        best_right_node_index = None  # To store the indices of the right node
+
+        # Iterate over each feature in the DataFrame
+        for feature in dataset.columns:
+            # Iterate over each unique value in the feature
+            for value in dataset[feature].unique():
+                # Get the indices of the left and right nodes based on the feature value
+                left_node_index = dataset[dataset[feature] == value].index
+                right_node_index = dataset[dataset[feature] != value].index
+
+                # Calculate the weighted Gini impurity for the split
+                weighted_gini = self._weighted_gini_impurity(labels[left_node_index].values.tolist(),
+                                                            labels[right_node_index].values.tolist())
+
+                # Update the best split if a lower weighted Gini impurity is found
+                if weighted_gini < minimum_weighted_gini:
+                    minimum_weighted_gini = weighted_gini
+                    best_feature = feature
+                    best_feature_value = value
+                    best_left_node_index = left_node_index.tolist()
+                    best_right_node_index = right_node_index.tolist()
+
+        # Return the results of the best split found
+        return minimum_weighted_gini, best_feature, best_feature_value, best_left_node_index, best_right_node_index
+
+    def _recursive_split_function(self, dataset: pd.DataFrame, labels: pd.Series, node):
+        """
+        Recursively split the dataset to build a decision tree.
+
+        This function splits the dataset using the best feature and value, and 
+        recursively applies the same process to the resulting child nodes.
+
+        Args:
+            dataset (pd.DataFrame): DataFrame containing the feature columns.
+            labels (pd.Series): Series containing the labels.
+            node (Node): Current node in the decision tree.
+        """
+        # Calculate the Gini impurity for the current set of labels
+        gini = self._gini_impurity(labels.values.tolist())
+        minimum = 1  # Minimum number of samples to split
+
+        # Drop duplicates to avoid redundant splits
+        d = dataset.drop_duplicates()
+        l = len(d)
+
+        # Check for terminal condition: no impurity, minimum samples, or only one unique sample
+        if gini == 0 or len(dataset) <= minimum or l == 1:
+            label = labels.mode()[0]  # Assign the most frequent label
+            node.set_term(label)  # Mark the node as terminal
             return
 
-        feature_name, split_value, left_indices, right_indices, least_gini_index = \
-            self._split_function(features, targets)
+        # Find the best split for the current node
+        minimum_wg, feature, value, left_node_index, right_node_index = self._split_function(dataset, labels)
 
-        node.set_split(feature_name, split_value)
+        # Set the split feature and value for the current node
+        node.set_split(feature, value)
+        print(f'Made split {feature} with value {value}')  # Print the split information
 
-        # print(f'Made split: {feature_name} is {split_value}')
+        # Recursively split the left node
+        left = Node()
+        node.left = left
+        self._recursive_split_function(dataset.loc[left_node_index], labels.loc[left_node_index], left)
 
-        left_child = Node()
-        node.left = left_child
+        # Recursively split the right node
+        right = Node()
+        node.right = right
+        self._recursive_split_function(dataset.loc[right_node_index], labels.loc[right_node_index], right)
 
-        left_features = features.loc[left_indices]
-        left_features.index = range(len(features.loc[left_indices]))
+    def fit(self, dataset: pd.DataFrame):
+        """
+        Build a decision tree classifier from the training dataset.
 
-        left_targets = targets.loc[left_indices]
-        left_targets.index = range(len(targets.loc[left_indices]))
+        This function initiates the recursive process of splitting the dataset
+        to build the decision tree, starting from the root node.
 
-        self._recursive_splitting(left_child, left_features, left_targets)
-
-        right_child = Node()
-        node.right = right_child
-
-        right_features = features.loc[right_indices]
-        right_features.index = range(len(features.loc[right_indices]))
-
-        right_targets = targets.loc[right_indices]
-        right_targets.index = range(len(targets.loc[right_indices]))
-
-        self._recursive_splitting(right_child, right_features, right_targets)
-
-    def fit(self, train_set):
-        features = train_set.iloc[:, :-1]
-        targets = train_set.iloc[:, -1]
-
-        self._recursive_splitting(self.root, features, targets)
+        Args:
+            dataset (pd.DataFrame): DataFrame containing the training data with 
+                                    features and labels.
+        """
+        # Separate features (X) and labels (y) from the dataset
+        X = dataset.drop(columns='Survived')
+        y = dataset['Survived']
+        # Start the recursive splitting process from the root node
+        self._recursive_split_function(X, y, self.root)
 
     def _internal_recursive_predicting(self, node, record):
-        if node.term:
-            print(f'Predicted label: {node.label}')
-            return
+        """
+        Recursively traverse the decision tree to make a prediction for a single record.
 
+        This function traverses the tree from the root node to a leaf node by
+        evaluating the decision rules at each node, and returns the label of the
+        leaf node as the prediction.
+
+        Args:
+            node (Node): The current node in the decision tree.
+            record (pd.Series): The record for which to make the prediction.
+        """
+        if node.term:
+            # If the node is terminal, return its label as the prediction
+            print(f'Predicted label: {node.label}')
+            return node.label  # Return the label of the terminal node
+
+        # Traverse to the left or right child based on the feature value
         if record[node.feature] == node.value:
             print(f'Considering decision rule on feature {node.feature} with value {node.value}')
-            self._internal_recursive_predicting(node.left, record)
+            return self._internal_recursive_predicting(node.left, record)
         else:
             print(f'Considering decision rule on feature {node.feature} with value {node.value}')
-            self._internal_recursive_predicting(node.right, record)
+            return self._internal_recursive_predicting(node.right, record)
 
     def predict(self, test_set: pd.DataFrame):
+        """
+        Predict labels for a test dataset using the trained decision tree.
+
+        This function iterates over each record in the test dataset and uses the
+        trained decision tree to predict its label.
+
+        Args:
+            test_set (pd.DataFrame): DataFrame containing the test data.
+        """
+        predictions = []  # Initialize list to store predictions
         for i in range(len(test_set)):
+            # Get the feature values for the current record
             feature = test_set.iloc[i]
             print(f'Prediction for sample # {i}')
-            self._internal_recursive_predicting(self.root, feature)
+            # Recursively predict the label for the current record
+            predictions.append(self._internal_recursive_predicting(self.root, feature))
+        return predictions  # Return the list of predictions
 
-
-# file_name = r'C:\Users\Pars Rayan\Desktop\Decision Tree from Scratch\Decision Tree from Scratch' \
-#             r'\task\test\data_stage5_train.csv'
-
-train_address, test_address = input().split()
-df_train = pd.read_csv(train_address, index_col=0)
-root = Node()
-decision_tree = DecisionTree(root)
-decision_tree.fit(df_train)
-
-df_test = pd.read_csv(test_address, index_col=0)
-decision_tree.predict(df_test)
+# Load dataset from CSV file
+df_train = pd.read_csv('data_stage5_train.csv', index_col='Unnamed: 0')
+df_test = pd.read_csv('data_stage5_test.csv', index_col='Unnamed: 0')
+# Initialize the decision tree with a root node
+ds = DecisionTree(Node())
+# Fit the decision tree with the training dataset
+ds.fit(df_train)
+# Predict using the test dataset
+predictions = ds.predict(df_test)
