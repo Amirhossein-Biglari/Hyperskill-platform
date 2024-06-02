@@ -123,14 +123,13 @@ class DecisionTree:
         """
         # Calculate the Gini impurity for the current set of labels
         gini = self._gini_impurity(labels.values.tolist())
-        minimum = 1  # Minimum number of samples to split
 
         # Drop duplicates to avoid redundant splits
         d = dataset.drop_duplicates()
         l = len(d)
 
         # Check for terminal condition: no impurity, minimum samples, or only one unique sample
-        if gini == 0 or len(dataset) <= minimum or l == 1:
+        if gini == 0 or len(dataset) <= self.minimum_num_samples or l == 1:
             label = labels.mode()[0]  # Assign the most frequent label
             node.set_term(label)  # Mark the node as terminal
             return
