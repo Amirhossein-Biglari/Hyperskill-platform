@@ -18,7 +18,7 @@ def convert_embarked(x):
 
 if __name__ == '__main__':
     # Read the Titanic dataset from CSV file
-    data = pd.read_csv('Stage 1/titanic.csv')
+    data = pd.read_csv('titanic.csv')
 
     # Drop unnecessary columns
     data.drop(['PassengerId', 'Name', 'Ticket', 'Cabin'], axis=1, inplace=True)
