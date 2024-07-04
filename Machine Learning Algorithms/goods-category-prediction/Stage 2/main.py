@@ -1,11 +1,6 @@
-import pandas as pd
 import numpy as np
-import nltk
 import pickle
-from nltk.tokenize import regexp_tokenize
-from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
-from nltk.corpus import stopwords
 from gensim.models import Word2Vec
 from gensim.models import KeyedVectors
 from sklearn.model_selection import train_test_split
@@ -87,4 +82,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # print("""['aa', 'aaa', 'aab', 'aac', 'aaw', 'aax', 'ab', 'aba', 'abacus', 'abalone', 'abandon', 'abb', 'abbey', 'abbreviation', 'abc', 'abdomen', 'abdominal', 'abeb', 'ability', 'ablative', 'able', 'ably', 'abound', 'abraham', 'abrasion', 'abrasive', 'abroad', 'abruptly', 'abs', 'absence', 'absolute', 'absolutely', 'absorb', 'absorbable', 'absorbed', 'absorbency', 'absorbent', 'absorber', 'absorbs', 'absorption', 'abstract', 'abundance', 'abundant', 'abuse', 'ac', 'acacia', 'academic', 'academy', 'acai', 'acamps']""")
