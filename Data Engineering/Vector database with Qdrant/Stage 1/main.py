@@ -1,9 +1,8 @@
 import json
 import uuid
-from typing import Any, Generator
-
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct
+
 
 COLLECTION_NAME = 'arxiv_papers'
 VECTOR_DIMENSION = 1536
@@ -11,6 +10,7 @@ EMBEDDING_MODEL = 'text-embedding-ada-002'
 EMBEDDING_FILE_PATH = 'ml-archxiv-embeddings/ml-arxiv-embeddings.json'
 QDRANT_HOST = 'localhost'
 QDRANT_PORT = 6333
+
 
 client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
 
@@ -21,7 +21,7 @@ if not client.collection_exists(collection_name=f"{COLLECTION_NAME}"):
     )
 
 
-def stream_json(file_path) -> Generator[Any, Any, None]:
+def stream_json(file_path):
     with open(file_path, "r", encoding="utf-8") as f:
         for line in f:
             yield json.loads(line)
@@ -64,6 +64,5 @@ def load_vectors_to_qdrant(file_path, batch_size=500) -> None:
     print(f"Total records inserted: {total_records}")
 
 if __name__ == '__main__':
-    ...
     load_vectors_to_qdrant(EMBEDDING_FILE_PATH)
     print("All records have been inserted into the Qdrant collection.")
